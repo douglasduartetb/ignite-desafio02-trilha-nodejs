@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const validator = require('validator');
 
 const { v4: uuidv4, validate } = require('uuid');
 
@@ -10,19 +11,82 @@ app.use(cors());
 const users = [];
 
 function checksExistsUserAccount(request, response, next) {
-  // Complete aqui
+  
+  let { username } = request.headers;
+
+  let findUser = users.find(user => user.username === username);
+
+  if(!findUser){
+    return response.status(404).json({error: "Usuário não encontrado"});
+  }
+
+  // mantém os dados do usuário
+  request.user = findUser;
+
+  // finaliza
+  return next();
+
 }
 
 function checksCreateTodosUserAvailability(request, response, next) {
-  // Complete aqui
+  
+  let { user } = request;
+
+  if(user.pro || user.todos.length < 10){
+    return next();
+  }else{
+    return response.status(403).json({error: "User already have 10 todos"})
+  }
+  
 }
 
 function checksTodoExists(request, response, next) {
-  // Complete aqui
+
+  let { username } = request.headers;
+
+  let user = users.find(user => user.username === username);
+
+  if(!user){
+    return response.status(404).json({error: "Usuário não encontrado"});
+  }
+
+  // let { user } = request;
+  let { id } = request.params;
+
+  if(!validator.isUUID(id)){
+    return response.status(400).json({error: "Id is not valid"});
+  }
+
+  // busca pelo todo na lista de todos do usuário
+  let findTodo = user.todos.find(todo => todo.id === id);
+
+  if(!findTodo){
+    return response.status(404).json({error: "Todo not found"});
+  }
+
+  request.user = user;
+  request.todo = findTodo;
+
+  return next();
+
 }
 
 function findUserById(request, response, next) {
-  // Complete aqui
+  
+  let { id } = request.params;
+
+  let findUser = users.find(user => user.id === id);
+
+  if(!findUser){
+    return response.status(404).json({error: "Usuário não encontrado"});
+  }
+
+  // mantém os dados do usuário
+  request.user = findUser;
+
+  // finaliza
+  return next();
+
 }
 
 app.post('/users', (request, response) => {
